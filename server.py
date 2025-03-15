@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import json
 import math
+import pathlib
 
 from .folder_monitor import FileSystemMonitor, scan_directory_initial
 from .folder_scanner import _scan_for_images
@@ -120,5 +121,3 @@ async def stop_gallery_monitor(request):
 async def newSettings(request):
     # This route is no longer used
     return web.Response(status=200)
-
-import pathlib # Import pathlib

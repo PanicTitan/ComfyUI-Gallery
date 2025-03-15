@@ -1,6 +1,7 @@
 class GalleryNode:
 
     def __init__(self):
+        pass
 
     @classmethod
     def INPUT_TYPES(cls):
