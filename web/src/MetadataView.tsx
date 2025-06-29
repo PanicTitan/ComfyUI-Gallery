@@ -1,4 +1,4 @@
-import { Typography, Button, Flex, Descriptions, Tooltip, message, Image, Popconfirm } from 'antd';
+import { Typography, Button, Descriptions, Tooltip, message, Image, Popconfirm } from 'antd';
 import { parseComfyMetadata } from './metadataParser';
 import { useState, useMemo, useCallback } from 'react';
 import type { FileDetails } from './types';
@@ -28,7 +28,7 @@ export function MetadataView({
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
 
-    const { mutate, currentFolder, settings } = useGalleryContext();
+    const { settings } = useGalleryContext();
 
     // Memoize prompt value renderer
     const renderPromptValue = useCallback((key: string, value: string) => {
@@ -77,11 +77,33 @@ export function MetadataView({
                             display: 'block', 
                             maxWidth: 420 
                         }}
-                        onClick={() => {
-                            navigator.clipboard.writeText(value);
-                            setCopiedKey(key);
-                            message.success('Copied!', 1);
-                            setTimeout(() => setCopiedKey(null), 1200);
+                        onClick={async () => {
+                            try {
+                                await navigator.clipboard.writeText(value);
+                                setCopiedKey(key);
+                                message.success('Copied!', 1);
+                                setTimeout(() => setCopiedKey(null), 1200);
+                            } catch (err) {
+                                // Fallback for browsers without clipboard API support
+                                try {
+                                    const textArea = document.createElement('textarea');
+                                    textArea.value = value;
+                                    textArea.style.position = 'fixed';
+                                    textArea.style.opacity = '0';
+                                    document.body.appendChild(textArea);
+                                    textArea.select();
+                                    textArea.setSelectionRange(0, 99999);
+                                    document.execCommand('copy');
+                                    document.body.removeChild(textArea);
+                                    
+                                    setCopiedKey(key);
+                                    message.success('Copied!', 1);
+                                    setTimeout(() => setCopiedKey(null), 1200);
+                                } catch (fallbackErr) {
+                                    console.error('Copy failed:', err, fallbackErr);
+                                    message.error('Copy failed - please try manually selecting and copying');
+                                }
+                            }
                         }}
                     >
                         {isPrompt ? renderPromptValue(key, value) : value}
@@ -112,7 +134,7 @@ export function MetadataView({
                                     new window.ClipboardItem({ [blob.type]: blob })
                                 ]);
                                 message.success('Image copied to clipboard');
-                            } catch (err) {
+                            } catch {
                                 message.error('Clipboard copy failed');
                             }
                         } else {
@@ -126,7 +148,7 @@ export function MetadataView({
             img.onerror = () => {
                 message.error('Failed to load image for copy (CORS)');
             };
-        } catch (err) {
+        } catch {
             message.error('Failed to copy image');
         }
     }, [image.url]);
@@ -138,7 +160,7 @@ export function MetadataView({
             if (!response.ok) throw new Error('Network response was not ok');
             const blob = await response.blob();
             saveAs(blob, image.name);
-        } catch (err) {
+        } catch {
             message.error('Failed to download file (CORS)');
         }
     }, [image.url, image.name]);
@@ -252,43 +274,9 @@ export function MetadataView({
                                         boxShadow: '0 2px 8px rgba(0,0,0,0.12)' 
                                     }}
                                     onClick={async () => {
-                                        try {
-                                            const img = new window.Image();
-                                            img.crossOrigin = 'anonymous';
-                                            img.src = `${BASE_PATH}${image.url}`;
-                                            img.onload = async () => {
-                                                const canvas = document.createElement('canvas');
-                                                canvas.width = img.width;
-                                                canvas.height = img.height;
-                                                const ctx = canvas.getContext('2d');
-                                                if (ctx) {
-                                                    ctx.drawImage(img, 0, 0);
-                                                    canvas.toBlob(async (blob) => {
-                                                        if (blob) {
-                                                            try {
-                                                                await navigator.clipboard.write([
-                                                                    new window.ClipboardItem({ [blob.type]: blob })
-                                                                ]);
-                                                                setCopiedKey('image');
-                                                                message.success('Image copied to clipboard');
-                                                                setTimeout(() => setCopiedKey(null), 1200);
-                                                            } catch (err) {
-                                                                message.error('Clipboard copy failed');
-                                                            }
-                                                        } else {
-                                                            message.error('Failed to copy image');
-                                                        }
-                                                    }, 'image/png');
-                                                } else {
-                                                    message.error('Failed to copy image');
-                                                }
-                                            };
-                                            img.onerror = () => {
-                                                message.error('Failed to load image for copy (CORS)');
-                                            };
-                                        } catch (err) {
-                                            message.error('Failed to copy image');
-                                        }
+                                        setCopiedKey('image');
+                                        await handleCopyImage();
+                                        setTimeout(() => setCopiedKey(null), 1200);
                                     }}
                                 />
                             </Tooltip>

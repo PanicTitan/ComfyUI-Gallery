@@ -14,7 +14,7 @@ ComfyAppApi.registerExtension({
         try {
             const raw = localStorage.getItem('comfy-ui-gallery-settings');
             if (raw) settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-        } catch {}
+        } catch { /* ignore parse errors */ }
 
         const targetElement = document.querySelector(settings.buttonBoxQuery) || document.querySelector(DEFAULT_SETTINGS.buttonBoxQuery);
         if (!targetElement) throw new Error('Could not find element for Button Box Query');
@@ -28,6 +28,7 @@ ComfyAppApi.registerExtension({
 
         ComfyAppApi.startMonitoring(settings.relativePath);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async nodeCreated(node: any) {
         try {
             if (node.comfyClass === "GalleryNode") {
@@ -37,23 +38,23 @@ ComfyAppApi.registerExtension({
                         try {
                             const raw = localStorage.getItem('comfy-ui-gallery-settings');
                             if (raw) settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-                        } catch {}
+                        } catch { /* ignore parse errors */ }
                         if (settings.galleryShortcut) {
                             document.getElementById(OPEN_BUTTON_ID)?.click();
                         }
-                    } catch (error) {
-                        
+                    } catch {
+                        /* ignore errors */
                     }
                 });
             }
-        } catch (error) {
-            
+        } catch {
+            /* ignore errors */
         }
     },
 });
 
 function Main() {
-    const [settingsState, setSettings] = useLocalStorageState<SettingsState>(STORAGE_KEY, {
+    const [settingsState] = useLocalStorageState<SettingsState>(STORAGE_KEY, {
         defaultValue: DEFAULT_SETTINGS,
         listenStorageChange: true,
     });

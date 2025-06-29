@@ -21,9 +21,7 @@
         "strict": true,
         "noUnusedLocals": false, /* true */
         "noUnusedParameters": false, /* true */
-        "erasableSyntaxOnly": true,
         "noFallthroughCasesInSwitch": true,
-        "noUncheckedSideEffectImports": true,
 
         /* Custom */
         "allowUnusedLabels": true
