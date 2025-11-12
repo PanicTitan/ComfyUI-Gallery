@@ -1,4 +1,4 @@
-import { Button, Image, Typography } from 'antd';
+import { Button, Image, Typography, theme } from 'antd';
 import type { FileDetails } from './types';
 import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
 import React, { useRef, useState } from 'react';
@@ -20,6 +20,7 @@ function ImageCard({
     onInfoClick: (imageName: string | undefined) => void;
     onVideoClick: (imageName: string | undefined) => void;
 }) {
+    const { token } = theme.useToken();
     const { settings, selectedImages, setSelectedImages } = useGalleryContext();
     const dragRef = useRef<HTMLDivElement>(null);
     const [dragging, setDragging] = useState(false);
@@ -81,7 +82,7 @@ function ImageCard({
                 borderRadius: 8,
                 overflow: "hidden",
                 margin: "15px",
-                border: dragging ? '2px solid #1890ff' : 'none',
+                border: dragging ? `2px solid ${token.colorPrimary}` : 'none',
                 opacity: dragging ? 0.5 : 1,
                 display: "flex",
                 alignContent: "center",
@@ -89,7 +90,7 @@ function ImageCard({
                 alignItems: "center",
                 position: "relative",
                 cursor: 'grab',
-                boxShadow: selectedImages.includes(image.url) ? '0 0 0 3px #1890ff' : undefined,
+                boxShadow: selectedImages.includes(image.url) ? `0 0 0 3px ${token.colorPrimary}` : undefined,
             }}
             onClick={handleCardClick}
         >
@@ -143,7 +144,7 @@ function ImageCard({
             <div
                 style={{
                     position: "absolute",
-                    backgroundColor: "#00000042",
+                    backgroundColor: token.colorBgMask,
                     width: "-webkit-fill-available",
                     padding: "10px",
                     bottom: "0px",
@@ -153,14 +154,14 @@ function ImageCard({
                     alignItems: "center",
                 }}
             >
-                <Typography.Text 
+                <Typography.Text
                     strong
-                    style={{ 
+                    style={{
                         margin: 0,
-                        color: "white"
+                        color: token.colorTextLightSolid
                     }}
                     ellipsis={{
-                        
+
                     }}
                 >
                     {image.name}

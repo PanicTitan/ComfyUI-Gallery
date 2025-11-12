@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Flex, AutoComplete, Button, Segmented, Modal, message, Popconfirm } from 'antd';
+import { Flex, AutoComplete, Button, Segmented, Modal, message, Popconfirm, theme } from 'antd';
 import { CloseSquareFilled, DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
 import { useGalleryContext } from './GalleryContext';
 import { useDebounce, useCountDown } from 'ahooks';
@@ -9,6 +9,7 @@ import FileSaver from 'file-saver';
 import { BASE_PATH, ComfyAppApi } from './ComfyAppApi';
 
 const GalleryHeader = () => {
+    const { token } = theme.useToken();
     const {
         showSettings, setShowSettings,
         searchFileName, setSearchFileName,
@@ -207,19 +208,19 @@ const GalleryHeader = () => {
                     >
                         {targetDate
                             ? (
-                                <Typography 
-                                    style={{ 
-                                        color: '#ff4d4f', 
-                                        fontWeight: 500 
+                                <Typography
+                                    style={{
+                                        color: token.colorError,
+                                        fontWeight: 500
                                     }}
                                 >
                                     {`   Close in ${Math.ceil(countdown / 1000)}s   `}
                                 </Typography>
                             ) : (
-                                <Typography 
-                                    style={{ 
-                                        color: '#888', 
-                                        fontWeight: 400 
+                                <Typography
+                                    style={{
+                                        color: token.colorTextDescription,
+                                        fontWeight: 400
                                     }}
                                 >
                                     Hover to close 3s

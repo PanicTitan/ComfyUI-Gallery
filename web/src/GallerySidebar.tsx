@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, memo, useRef, useState, useEffect } from 'react';
-import { Tree, Spin } from 'antd';
+import { Tree, Spin, theme } from 'antd';
 import { useGalleryContext } from './GalleryContext';
 import type { FilesTree } from './types';
 import { useDrop, useCountDown } from 'ahooks';
@@ -59,6 +59,7 @@ const foldersToTreeData = (data: FilesTree): TreeDataNode[] => {
 
 // Memoize FolderTitle to avoid unnecessary re-renders
 const FolderTitle = memo(({ nodeData, currentFolder }: { nodeData: any, currentFolder: string }) => {
+    const { token } = theme.useToken();
     const folderRef = useRef<HTMLDivElement>(null);
     const { data, selectedImages, setSelectedImages } = useGalleryContext();
 
@@ -127,23 +128,18 @@ const FolderTitle = memo(({ nodeData, currentFolder }: { nodeData: any, currentF
                 borderRadius: 4,
                 transition: 'background 0.2s',
                 cursor: 'pointer',
-                background: allSelected ? 'rgba(24, 144, 255, 0.15)' : undefined,
-                border: allSelected ? '1.5px solid #1890ff' : undefined,
+                background: allSelected ? token.colorPrimaryBg : undefined,
+                border: allSelected ? `1.5px solid ${token.colorPrimary}` : undefined,
             }}
             onClick={(event) => handleCardClick(event, nodeData.title)}
         >
             <span style={{ marginLeft: 0 }}>{nodeData.title}</span>
-            <style>{`
-                .folder-selected {
-                    background: rgba(24, 144, 255, 0.15) !important;
-                    border: 1.5px solid #1890ff !important;
-                }
-            `}</style>
         </span>
     );
 });
 
 const GallerySidebar = () => {
+    const { token } = theme.useToken();
     const { data, loading, currentFolder, setCurrentFolder, setOpen, siderCollapsed, settings } = useGalleryContext();
     // Only recalculate treeData if folder structure actually changes
     const treeData = useMemo(() => {
@@ -204,7 +200,7 @@ const GallerySidebar = () => {
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    background: 'rgba(30,30,30,0.5)',
+                    background: token.colorBgMask,
                     zIndex: 100,
                     display: 'flex',
                     alignItems: 'center',
