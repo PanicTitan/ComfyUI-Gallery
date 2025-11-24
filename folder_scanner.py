@@ -3,14 +3,30 @@ import os
 from datetime import datetime
 from .metadata_extractor import buildMetadata  # Import metadata extractor
 
-def _scan_for_images(full_base_path, base_path, include_subfolders):
-    """Scans directories for images, videos, and GIFs and their metadata."""
+# Default extensions include images, media and audio
+DEFAULT_EXTENSIONS = [
+    '.png', '.jpg', '.jpeg', '.webp',  # Images
+    '.mp4', '.gif', '.webm', '.mov',   # Media
+    '.wav', '.mp3', '.m4a', '.flac'    # Audio
+]
+
+def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_extensions=None):
+    """Scans directories for files matching allowed extensions."""
+    if allowed_extensions is None:
+        allowed_extensions = DEFAULT_EXTENSIONS
+
+    # Normalize extensions to a tuple for str.endswith checks
+    allowed_extensions_tuple = tuple(
+        ext.lower() if ext.startswith('.') else f".{ext.lower()}" 
+        for ext in allowed_extensions
+    )
+
     folders_data = {}
     current_files = set()
     changed = False
 
     def scan_directory(dir_path, relative_path=""):
-        """Recursively scans a directory for image, video, and GIF files."""
+        """Recursively scans a directory for files matching allowed extensions."""
         nonlocal changed
         folder_content = {}  # Dictionary to hold files for the current folder
         try:
@@ -28,7 +44,8 @@ def _scan_for_images(full_base_path, base_path, include_subfolders):
                     current_files.add(full_path)
 
             for full_path, entry in file_entries:
-                if entry.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.mp4', '.gif', '.webm')): # ADDED: .mp4 and .gif extensions
+                lower_entry = entry.lower()
+                if lower_entry.endswith(allowed_extensions_tuple):
                     try:
                         timestamp = os.path.getmtime(full_path)
                         date_str = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
@@ -36,27 +53,35 @@ def _scan_for_images(full_base_path, base_path, include_subfolders):
                         filename = entry
                         subfolder = rel_path if rel_path != "." else ""
                         if len(subfolder) > 0:
-                          url_path = f"/static_gallery/{subfolder}/{filename}"
+                            url_path = f"/static_gallery/{subfolder}/{filename}"
                         else:
-                          url_path = f"/static_gallery/{filename}"
+                            url_path = f"/static_gallery/{filename}"
                         url_path = url_path.replace("\\", "/")
 
-                        metadata = {} # Videos and GIFs will have empty metadata for now
-                        if entry.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')): # Only build metadata for images
-                            # Extract metadata here
+                        # Default metadata and type detection
+                        metadata = {}
+                        file_type = "unknown"
+                        ext = os.path.splitext(lower_entry)[1]
+
+                        if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                            file_type = "image"
                             try:
                                 _, _, metadata = buildMetadata(full_path)
                             except Exception as e:
                                 print(f"Gallery Node: Error building metadata for {full_path}: {e}")
                                 metadata = {}
+                        elif ext in ['.mp4', '.gif', '.webm', '.mov']:
+                            file_type = "media"
+                        elif ext in ['.wav', '.mp3', '.m4a', '.flac']:
+                            file_type = "audio"
 
-                        folder_content[filename] = { # Store file info in folder_content dict
+                        folder_content[filename] = { 
                             "name": entry,
                             "url": url_path,
                             "timestamp": timestamp,
                             "date": date_str,
                             "metadata": metadata,
-                            "type": "image" if entry.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')) else "media" # Added type to distinguish images and media
+                            "type": file_type
                         }
                     except Exception as e:
                         print(f"Gallery Node: Error processing file {full_path}: {e}")

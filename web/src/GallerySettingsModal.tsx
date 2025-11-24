@@ -2,22 +2,28 @@ import Modal from 'antd/es/modal/Modal';
 import { Button, Flex, Input, Switch, Typography } from 'antd';
 import { useGalleryContext, type SettingsState } from './GalleryContext';
 import { useSetState } from 'ahooks';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BASE_Z_INDEX } from './ComfyAppApi';
 
 const GallerySettingsModal = () => {
     const { showSettings, setShowSettings, settings, setSettings } = useGalleryContext();
     // Staged (unsaved) settings
     const [staged, setStaged] = useSetState<SettingsState>(settings);
+    const [extInput, setExtInput] = useState("");
 
     // When modal opens, reset staged to current settings
     useEffect(() => {
-        if (showSettings) setStaged(settings);
+        if (showSettings) {
+            setStaged(settings);
+            setExtInput((settings && (settings as any).scanExtensions) ? (settings as any).scanExtensions.join(', ') : "");
+        }
     }, [showSettings, settings, setStaged]);
 
     // Save staged settings to context and close
     const handleSave = () => {
-        setSettings(staged);
+        const exts = extInput.split(',').map(s => s.trim().replace(/^\./, '')).filter(s => s);
+        const newSettings = { ...staged, scanExtensions: exts } as SettingsState;
+        setSettings(newSettings);
         setShowSettings(false);
     };
     // Cancel: just close modal (staged will reset on next open)
@@ -141,6 +147,11 @@ const GallerySettingsModal = () => {
                     checked={staged.usePollingObserver}
                     onChange={checked => setStaged({ usePollingObserver: checked })}
                 />
+                <div>
+                    <Typography.Title level={5}>Scan File Extensions:</Typography.Title>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Comma separated (e.g. png, jpg, mp4, wav)</Typography.Text>
+                    <Input value={extInput} onChange={e => setExtInput(e.target.value)} />
+                </div>
             </Flex>
         </Modal>
     );

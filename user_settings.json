@@ -1,0 +1,13 @@
+{
+    "_comment": "Values here override defaults.",
+    "relativePath": null,
+    "scanExtensions": null,
+    "darkMode": null,
+    "autoPlayVideos": null,
+    "floatingButton": null,
+    "showDateDivider": null,
+    "galleryShortcut": null,
+    "expandAllFolders": null,
+    "disableLogs": null,
+    "usePollingObserver": null
+}

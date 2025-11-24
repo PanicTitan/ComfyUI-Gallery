@@ -44,6 +44,13 @@ This ComfyUI custom node provides a feature-rich, real-time gallery directly wit
 *   **Hover to close button (v1.6.0, React version in v2.0.0):** A button appears in the header when dragging an image, allowing you to hover over it to close the gallery (useful for dropping images into your workflow).
 *   **Hotkeys navigation (v1.7.0, React version in v2.0.0):** Simple navigation with ← → arrows and ESC button while viewing images on fullscreen (provided by Ant Design's Image Preview).
 
+### New Features in this update
+
+- Audio support: `.wav`, `.mp3`, `.m4a`, `.flac` files are now detected and shown in the gallery with a generic thumbnail and an inline audio player.
+- Persistent settings: Gallery settings are now saved to `user_settings.json` on the server and loaded automatically on startup.
+- Configurable file extensions: You can configure which file extensions the gallery scans via the settings panel (comma-separated list).
+- Non-blocking startup scan: The initial folder scan now runs in a background thread to avoid freezing ComfyUI on startup when scanning large collections.
+
 ## Get Started:
 
 **1. Installation:**
@@ -100,6 +107,14 @@ The backend now supports **global log suppression** and **observer type switchin
 - All custom node logs (not from dependencies) should be suppressed when "Disable Logs" is enabled in the Gallery settings.
 
 ## Changelog
+
+*   **v2.6.0:**
+    *   Audio support: `.wav`, `.mp3`, `.m4a`, `.flac` files are detected and shown in the gallery with a generic thumbnail, inline audio player.
+    *   Persistent settings: Gallery settings are saved to `user_settings.json` on the server and automatically loaded on startup (GET/POST `/Gallery/settings`).
+    *   Configurable file extensions: Specify which file extensions the gallery scans via the settings panel (comma-separated list).
+    *   Non-blocking startup scan: The initial folder scan runs in a background thread to avoid freezing ComfyUI on startup when scanning large collections.
+    *   Fix: Resolved preview-type persistence bug where images could open with the media renderer after viewing video.
+    *   Misc: Settings UI and server-side handling improved for more robust defaults and safer merging of saved settings.
 
 *   **v2.1.0:**
     *   New setting: Enable/Disable Ctrl+G shortcut for opening the gallery, configurable in the settings panel.

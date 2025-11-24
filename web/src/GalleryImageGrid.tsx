@@ -70,13 +70,23 @@ const GalleryImageGrid = () => {
     }, [currentFolder, data, sortMethod, searchFileName, gridSize.columnCount, settings.showDateDivider]);
 
     const imagesUrlsLists = useMemo(() =>
-        imagesDetailsList.filter(image => image.type === "image" || image.type === "media").map(image => `${BASE_PATH}${image.url}`),
+        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio").map(image => `${BASE_PATH}${image.url}`),
         [imagesDetailsList]
     );
 
     const handleInfoClick = useCallback((imageName: string) => {
+        // Set the info modal target
+        
+        // If the item is media/audio, set previewing state so the preview group uses media renderer
+        const item = data?.folders?.[currentFolder]?.[imageName];
+        if (item && (item.type === 'media' || item.type === 'audio')) {
+            setPreviewingVideo(item.name);
+        } else {
+            setPreviewingVideo(undefined);
+        }
+
         setImageInfoName(imageName);
-    }, [setImageInfoName]);
+    }, [setImageInfoName, data, currentFolder, setPreviewingVideo]);
 
     const Cell = useCallback(({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
         const index = rowIndex * gridSize.columnCount + columnIndex;
@@ -198,7 +208,7 @@ const GalleryImageGrid = () => {
 
     // Memoized previewable images for InfoView navigation and rendering
     const previewableImages = useMemo(() =>
-        imagesDetailsList.filter(img => img.type === "image" || img.type === "media"),
+        imagesDetailsList.filter(img => img.type === "image" || img.type === "media" || img.type === "audio"),
         [imagesDetailsList]
     );
 
@@ -253,11 +263,32 @@ const GalleryImageGrid = () => {
         if (!open) setImageInfoName(undefined);
     }, [setImageInfoName]);
 
-    // Memoized video imageRender
+    // Memoized media (video/audio) imageRender
     const videoImageRender = useCallback((originalNode: any, info: any) => {
         let image = data?.folders?.[currentFolder]?.[previewingVideo ?? ""];
         image = resolvePreviewableImage(image, info);
         if (!image) return null;
+        if (image.type === 'audio') {
+            return (
+                <audio
+                    key={image.name}
+                    style={{
+                        maxWidth: "-webkit-fill-available",
+                        width: "80%"
+                    }}
+                    src={`${BASE_PATH}${image.url}`}
+                    autoPlay={true}
+                    controls={true}
+                    preload="none"
+                    ref={el => {
+                        if (el && !settings.autoPlayVideos) {
+                            el.pause();
+                            el.currentTime = 0;
+                        }
+                    }}
+                />
+            );
+        }
         return (
             <video
                 key={image.name}
@@ -281,7 +312,8 @@ const GalleryImageGrid = () => {
 
     // Memoized onChange for video preview
     const videoOnChange = useCallback((current: number, prevCurrent: number) => {
-        if (previewableImages[current]?.type == "media") {
+        const t = previewableImages[current]?.type;
+        if (t == "media" || t == "audio") {
             setPreviewingVideo(previewableImages[current]?.name);
         } else {
             setPreviewingVideo(undefined);

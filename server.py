@@ -13,7 +13,7 @@ import asyncio
 import shutil
 
 from .folder_monitor import FileSystemMonitor
-from .folder_scanner import _scan_for_images
+from .folder_scanner import _scan_for_images, DEFAULT_EXTENSIONS
 from .gallery_config import disable_logs, gallery_log
 
 # Add ComfyUI root to sys.path HERE
@@ -33,6 +33,28 @@ PromptServer.instance.routes.static('/static_gallery', PLACEHOLDER_DIR, follow_s
 # Initialize scan_lock here
 PromptServer.instance.scan_lock = threading.Lock()
 
+# Settings file for persistent user settings
+SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_settings.json")
+
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            gallery_log(f"Error loading settings: {e}")
+            return {}
+    return {}
+
+
+def save_settings_to_file(settings):
+    try:
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=4)
+    except Exception as e:
+        gallery_log(f"Error saving settings: {e}")
+
 def sanitize_json_data(data):
     """Recursively sanitizes data to be JSON serializable."""
     if isinstance(data, dict):
@@ -48,11 +70,32 @@ def sanitize_json_data(data):
     else:
         return str(data)
 
+
+@PromptServer.instance.routes.get("/Gallery/settings")
+async def get_settings(request):
+    return web.json_response(load_settings())
+
+
+@PromptServer.instance.routes.post("/Gallery/settings")
+async def save_settings(request):
+    try:
+        data = await request.json()
+        save_settings_to_file(data)
+        return web.Response(text="Settings saved")
+    except Exception as e:
+        return web.Response(status=500, text=str(e))
+
 @PromptServer.instance.routes.get("/Gallery/images")
 async def get_gallery_images(request):
     """Endpoint to get gallery images, accepts relative_path."""
-    relative_path = request.rel_url.query.get("relative_path", "./")
-    # Fix: Only join if relative_path is not absolute or '.':
+    raw_rel = request.rel_url.query.get("relative_path", "./")
+    # Normalize query value: treat null/None/empty as root
+    if raw_rel is None or str(raw_rel).lower() == 'null' or str(raw_rel).strip() == "":
+        relative_path = "./"
+    else:
+        relative_path = raw_rel
+
+    # Fix: Only join if relative_path is not absolute or '.'
     base_output_dir = folder_paths.get_output_directory()
     if os.path.isabs(relative_path):
         full_monitor_path = os.path.normpath(relative_path)
@@ -68,10 +111,13 @@ async def get_gallery_images(request):
         """Target function for the scanning thread."""
         with PromptServer.instance.scan_lock:
             try:
+                # Load saved settings to determine extensions
+                saved = load_settings()
+                scan_extensions = saved.get('scanExtensions', DEFAULT_EXTENSIONS)
                 # Use the actual folder name as the root key
                 folder_name = os.path.basename(full_monitor_path)
                 folders_with_metadata, _ = _scan_for_images(
-                    full_monitor_path, folder_name, True
+                    full_monitor_path, folder_name, True, scan_extensions
                 )
                 result_queue.put(folders_with_metadata)  # Put the result in the queue
             except Exception as e:
@@ -111,9 +157,13 @@ async def start_gallery_monitor(request):
     from . import gallery_config
     try:
         data = await request.json()
+        # Normalize relative_path: if missing, null, or literal 'null', treat as root
         relative_path = data.get("relative_path", "./")
+        if relative_path is None or str(relative_path).lower() == 'null' or str(relative_path).strip() == "":
+            relative_path = "./"
         gallery_config.disable_logs = data.get("disable_logs", False)
         gallery_config.use_polling_observer = data.get("use_polling_observer", False)
+        scan_extensions = data.get("scan_extensions", DEFAULT_EXTENSIONS)
         disable_logs = gallery_config.disable_logs
         use_polling_observer = gallery_config.use_polling_observer
         full_monitor_path = os.path.normpath(os.path.join(folder_paths.get_output_directory(), "..", "output", relative_path))
@@ -132,7 +182,7 @@ async def start_gallery_monitor(request):
         else:
             gallery_log("Error: Placeholder static route not found!")
             return web.Response(status=500, text="Placeholder route not found.")
-        monitor = FileSystemMonitor(full_monitor_path, use_polling_observer)
+        monitor = FileSystemMonitor(full_monitor_path, interval=1.0, use_polling_observer=use_polling_observer, extensions=scan_extensions)
         monitor.start_monitoring()
         return web.Response(text="Gallery monitor started", content_type="text/plain")
     except Exception as e:
@@ -227,9 +277,9 @@ async def move_image(request):
         if not os.path.exists(full_source_path):
             return web.Response(status=404, text=f"Source file not found: {full_source_path}")
         if not os.path.realpath(full_source_path).startswith(os.path.realpath(static_dir)) or \
-           not os.path.realpath(full_target_path).startswith(os.path.realpath(static_dir)) or \
-           not os.path.realpath(full_source_path).startswith(os.path.realpath(comfy_path)) or \
-           not os.path.realpath(full_target_path).startswith(os.path.realpath(comfy_path)):
+            not os.path.realpath(full_target_path).startswith(os.path.realpath(static_dir)) or \
+            not os.path.realpath(full_source_path).startswith(os.path.realpath(comfy_path)) or \
+            not os.path.realpath(full_target_path).startswith(os.path.realpath(comfy_path)):
             return web.Response(status=403, text="Access denied: File outside of allowed directory")
         if os.path.isdir(full_target_path):
             full_target_path = os.path.join(full_target_path, os.path.basename(full_source_path))

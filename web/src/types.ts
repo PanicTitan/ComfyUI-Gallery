@@ -17,7 +17,7 @@ export interface FileDetails {
     timestamp: number;
     date: string;
     metadata: Metadata;
-    type: "image" | "media" | "divider" | "empty-space";
+    type: "image" | "media" | "audio" | "divider" | "empty-space";
 }
 
 export interface FolderContent {

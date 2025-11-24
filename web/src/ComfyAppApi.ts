@@ -66,22 +66,23 @@ const comfyApp = getComfyApp();
 const app = comfyApp ? comfyApp : mockApi;
 
 export const ComfyAppApi = {
-    startMonitoring: (relativePath: string, disableLogs?: boolean, usePollingObserver?: boolean) =>
+    startMonitoring: (relativePath: string, disableLogs?: boolean, usePollingObserver?: boolean, scanExtensions?: string[]) =>
         app.api.fetchApi("/Gallery/monitor/start", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 relative_path: relativePath,
                 disable_logs: disableLogs ?? false,
-                use_polling_observer: usePollingObserver ?? false
+                use_polling_observer: usePollingObserver ?? false,
+                scan_extensions: scanExtensions 
             })
         }),
     stopMonitoring: () =>
         app.api.fetchApi("/Gallery/monitor/stop", {
             method: "POST"
         }),
-    fetchImages: (relativePath: string) =>
-        app.api.fetchApi(`/Gallery/images?relative_path=${encodeURIComponent(relativePath)}`),
+    fetchImages: (relativePath?: string) =>
+        app.api.fetchApi(`/Gallery/images?relative_path=${encodeURIComponent(relativePath ?? './')}`),
     onFileChange: (cb: GalleryEventCallback) =>
         app.api.addEventListener("Gallery.file_change", cb),
     onUpdate: (cb: GalleryEventCallback) =>
@@ -134,5 +135,22 @@ export const ComfyAppApi = {
             console.error("Error deleting image:", error);
             return false;
         }
+    },
+    // Settings endpoints
+    fetchSettings: async () => {
+        try {
+            const res = await app.api.fetchApi("/Gallery/settings");
+            if (res.ok) return await res.json();
+        } catch(e) { console.error(e); }
+        return {};
+    },
+    saveSettings: async (settings: any) => {
+        try {
+            await app.api.fetchApi("/Gallery/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(settings)
+            });
+        } catch(e) { console.error(e); }
     },
 };

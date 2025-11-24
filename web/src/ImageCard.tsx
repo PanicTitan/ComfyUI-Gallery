@@ -1,6 +1,7 @@
 import { Button, Image, Typography } from 'antd';
 import type { FileDetails } from './types';
 import InfoCircleOutlined from '@ant-design/icons/lib/icons/InfoCircleOutlined';
+import SoundOutlined from '@ant-design/icons/lib/icons/SoundOutlined';
 import React, { useRef, useState } from 'react';
 import { useDrag, useEventListener } from 'ahooks';
 import { useGalleryContext } from './GalleryContext';
@@ -20,7 +21,7 @@ function ImageCard({
     onInfoClick: (imageName: string | undefined) => void;
     onVideoClick: (imageName: string | undefined) => void;
 }) {
-    const { settings, selectedImages, setSelectedImages } = useGalleryContext();
+    const { settings, selectedImages, setSelectedImages, setPreviewingVideo } = useGalleryContext();
     const dragRef = useRef<HTMLDivElement>(null);
     const [dragging, setDragging] = useState(false);
 
@@ -58,15 +59,27 @@ function ImageCard({
     };
 
     // Native drag for exporting image as file/image
-    const handleNativeDragStart = (event: React.DragEvent<HTMLImageElement | HTMLVideoElement>) => {
-        // For images, set the drag data as a download URL
-        if (image.type === 'image') {
-            event.dataTransfer.setData('text/uri-list', `${BASE_PATH}${image.url}`);
-            event.dataTransfer.setData('DownloadURL', `image/png:${image.name}:${window.location.origin + BASE_PATH + image.url}`);
-        } else if (image.type === 'media') {
-            event.dataTransfer.setData('text/uri-list', `${BASE_PATH}${image.url}`);
-            event.dataTransfer.setData('DownloadURL', `video/mp4:${image.name}:${window.location.origin + BASE_PATH + image.url}`);
-        }
+    const handleNativeDragStart = (event: React.DragEvent<HTMLImageElement | HTMLVideoElement | HTMLAudioElement>) => {
+        // Guess MIME based on filename extension (frontend-only, no backend changes)
+        const guessMimeFromName = (name?: string) => {
+            const ext = (name || '').split('.').pop()?.toLowerCase() || '';
+            const map: Record<string, string> = {
+                // images
+                jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', tif: 'image/tiff', tiff: 'image/tiff',
+                // video
+                mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mkv: 'video/x-matroska', avi: 'video/x-msvideo',
+                // audio
+                mp3: 'audio/mpeg', wav: 'audio/wav', m4a: 'audio/mp4', flac: 'audio/flac', aac: 'audio/aac', ogg: 'audio/ogg',
+            };
+            return map[ext] || '';
+        };
+
+        const guessed = guessMimeFromName(image.name || image.url);
+        // Fallback to previous simple heuristic if we couldn't guess from extension
+        const mimeType = guessed || (image.type === 'image' ? 'image/png' : image.type === 'audio' ? 'audio/wav' : 'video/mp4');
+
+        event.dataTransfer.setData('text/uri-list', `${BASE_PATH}${image.url}`);
+        event.dataTransfer.setData('DownloadURL', `${mimeType}:${image.name}:${window.location.origin + BASE_PATH + image.url}`);
         // Optionally, set a drag image
         // event.dataTransfer.setDragImage(event.currentTarget, 10, 10);
     };
@@ -107,10 +120,31 @@ function ImageCard({
                     src={`${BASE_PATH}${image.url}`}
                     loading="lazy"
                     // preview={false}
+                    onClick={() => {
+                        // Ensure any leftover media preview state is cleared so this opens as an image
+                        try { setPreviewingVideo(undefined); } catch {}
+                        // Trigger the preview
+                        document.getElementById(image.url)?.click();
+                    }}
                     alt={image.name}
                     draggable
                     onDragStart={handleNativeDragStart}
                 />
+            </>) : image.type === "audio" ? (<>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                    <SoundOutlined style={{ fontSize: '64px', color: '#1890ff', marginBottom: '24px' }} />
+                    <Typography.Text style={{ marginBottom: '16px', padding: '0 16px', textAlign: 'center', maxWidth: '100%', color: '#e6e6e6' }} ellipsis>
+                        {image.name}
+                    </Typography.Text>
+                    <audio controls style={{ width: '90%', height: '40px' }} src={`${BASE_PATH}${image.url}`} onClick={(e) => e.stopPropagation()} />
+                    <Image
+                        id={image.url}
+                        style={{ display: 'none' }}
+                        src={`${BASE_PATH}${image.url}`}
+                        loading="lazy"
+                        alt={image.name}
+                    />
+                </div>
             </>) : <>
                 <video
                     style={{ 

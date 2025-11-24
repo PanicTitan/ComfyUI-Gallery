@@ -40,6 +40,7 @@ export interface SettingsState {
     expandAllFolders: boolean; 
     disableLogs: boolean;
     usePollingObserver: boolean;
+    scanExtensions: string[]; 
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
     expandAllFolders: true, 
     disableLogs: false,
     usePollingObserver: false,
+    scanExtensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'gif', 'webm', 'mov', 'wav', 'mp3', 'm4a', 'flac'],
 };
 export const STORAGE_KEY = 'comfy-ui-gallery-settings';
 
@@ -127,6 +129,20 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     });
 
     useAsyncEffect(async () => { 
+        // Fetch saved server settings and merge with defaults
+        try {
+            const serverSettings = await ComfyAppApi.fetchSettings();
+            if (serverSettings && Object.keys(serverSettings).length > 0) {
+                // Merge server settings into defaults, but only override when value is not null/undefined
+                const merged: any = { ...DEFAULT_SETTINGS };
+                Object.keys(serverSettings).forEach((k) => {
+                    const v = (serverSettings as any)[k];
+                    if (v !== null && v !== undefined) merged[k] = v;
+                });
+                setSettings(merged as SettingsState);
+            }
+        } catch (e) {}
+
         runAsync(); 
 
         ComfyAppApi.onFileChange((event) => {
@@ -145,12 +161,23 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     // Watch for changes to settingsState.relativePath, disableLogs, usePollingObserver and update monitoring and data
+    // Start monitoring when settings change
+    const saveSettings = (newSettings: SettingsState) => {
+        setSettings(newSettings);
+        ComfyAppApi.saveSettings(newSettings);
+    };
+
     useEffect(() => {
         if (settingsState?.relativePath) {
-            ComfyAppApi.startMonitoring(settingsState.relativePath, settingsState.disableLogs, settingsState.usePollingObserver);
+            ComfyAppApi.startMonitoring(
+                settingsState.relativePath, 
+                settingsState.disableLogs, 
+                settingsState.usePollingObserver,
+                settingsState.scanExtensions // Pass extensions here
+            );
             runAsync();
         }
-    }, [settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver]);
+    }, [settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver, JSON.stringify(settingsState?.scanExtensions)]);
 
     // Memoized list of all images in the current folder
     const imagesDetailsList = useMemo(() => {
@@ -196,13 +223,13 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
 
     // Memoized list of image URLs for preview
     const imagesUrlsLists = useMemo(() =>
-        imagesDetailsList.filter(image => image.type === "image" || image.type === "media").map(image => `${BASE_PATH}${image.url}`),
+        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio").map(image => `${BASE_PATH}${image.url}`),
         [imagesDetailsList]
     );
 
     // Memoized autocomplete options for image names
     const imagesAutoCompleteNames = useMemo<NonNullable<AutoCompleteProps['options']>>(() => {
-        let filtered = imagesDetailsList.filter(image => (image.type === "image" || image.type === "media") && typeof image.name === 'string');
+        let filtered = imagesDetailsList.filter(image => (image.type === "image" || image.type === "media" || image.type === "audio") && typeof image.name === 'string');
         if (sortMethod === 'Name ↑') {
             filtered = filtered.sort((a, b) => (a.name as string).localeCompare(b.name as string));
         } else if (sortMethod === 'Name ↓') {
@@ -319,7 +346,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         autoCompleteOptions,
         setAutoCompleteOptions,
         settings: settingsState || DEFAULT_SETTINGS,
-        setSettings,
+        setSettings: saveSettings,
         selectedImages,
         setSelectedImages,
         siderCollapsed,
@@ -348,7 +375,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         imagesAutoCompleteNames, 
         autoCompleteOptions,
         settingsState, 
-        setSettings,
+        saveSettings,
         selectedImages,
         setSelectedImages,
         siderCollapsed,

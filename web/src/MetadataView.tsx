@@ -293,7 +293,7 @@ export function MetadataView({
                                 />
                             </Tooltip>
                         )}
-                        <Tooltip title="Download">
+                        {image.type === 'image' && (<Tooltip title="Download">
                             <Button
                                 shape="circle"
                                 icon={<DownloadOutlined />}
@@ -306,9 +306,9 @@ export function MetadataView({
                                 }}
                                 onClick={handleDownload}
                             />
-                        </Tooltip>
+                        </Tooltip>)}
                     </div>
-                    {image.type === 'image' ? (
+                    {image.type == "image" && (
                         <Image
                             preview={false}
                             style={{
@@ -321,7 +321,8 @@ export function MetadataView({
                             src={`${BASE_PATH}${image.url}`}
                             loading="lazy"
                         />
-                    ) : (
+                    )}
+                    {image.type == "media" && (
                         <video
                             style={{
                                 objectFit: 'cover',
@@ -330,6 +331,14 @@ export function MetadataView({
                                 borderRadius: 12,
                                 background: '#222',
                             }}
+                            src={`${BASE_PATH}${image.url}`}
+                            autoPlay={true}
+                            controls={true}
+                            preload="none"
+                        />
+                    )}
+                    {image.type == "audio" && (
+                        <audio
                             src={`${BASE_PATH}${image.url}`}
                             autoPlay={true}
                             controls={true}
