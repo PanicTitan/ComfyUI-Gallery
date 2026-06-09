@@ -5,6 +5,7 @@ import { FixedSizeGrid } from 'react-window';
 import ImageCard, { ImageCardHeight, ImageCardWidth } from './ImageCard';
 import { useGalleryContext } from './GalleryContext';
 import { MetadataView } from './MetadataView';
+import { ModelViewer } from './ModelViewer';
 import type { FileDetails } from './types';
 import { BASE_PATH } from "./ComfyAppApi";
 
@@ -25,7 +26,7 @@ const GalleryImageGrid = () => {
         showRawMetadata,
         setShowRawMetadata,
         settings,
-        loading 
+        loading
     } = useGalleryContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const imagesDetailsList = useMemo(() => {
@@ -70,16 +71,16 @@ const GalleryImageGrid = () => {
     }, [currentFolder, data, sortMethod, searchFileName, gridSize.columnCount, settings.showDateDivider]);
 
     const imagesUrlsLists = useMemo(() =>
-        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio").map(image => `${BASE_PATH}${image.url}`),
+        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio" || image.type === "3d").map(image => `${BASE_PATH}${image.url}`),
         [imagesDetailsList]
     );
 
     const handleInfoClick = useCallback((imageName: string) => {
         // Set the info modal target
-        
-        // If the item is media/audio, set previewing state so the preview group uses media renderer
+
+        // If the item is media/audio/3d, set previewing state so the preview group uses media renderer
         const item = data?.folders?.[currentFolder]?.[imageName];
-        if (item && (item.type === 'media' || item.type === 'audio')) {
+        if (item && (item.type === 'media' || item.type === 'audio' || item.type === '3d')) {
             setPreviewingVideo(item.name);
         } else {
             setPreviewingVideo(undefined);
@@ -95,61 +96,61 @@ const GalleryImageGrid = () => {
         if (image.type === 'divider') {
             if (columnIndex !== 0) return null;
             return (
-                <div 
-                    key={`divider-${index}`} 
-                    style={{ 
-                        ...style, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        width: `calc(${gridSize.columnCount} * ${ImageCardWidth + 16}px)`, 
-                        gridColumn: `span ${gridSize.columnCount}`, 
-                        background: 'transparent', 
-                        padding: 0, 
-                        minHeight: 48, 
-                        position: 'absolute', 
-                        zIndex: 2 
+                <div
+                    key={`divider-${index}`}
+                    style={{
+                        ...style,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: `calc(${gridSize.columnCount} * ${ImageCardWidth + 16}px)`,
+                        gridColumn: `span ${gridSize.columnCount}`,
+                        background: 'transparent',
+                        padding: 0,
+                        minHeight: 48,
+                        position: 'absolute',
+                        zIndex: 2
                     }}
                 >
-                    <div 
-                        style={{ 
-                            width: '100%', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            position: 'relative' 
+                    <div
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            position: 'relative'
                         }}
                     >
-                        <div 
-                            style={{ 
-                                flex: 1, 
-                                borderBottom: '2px solid #888', 
-                                opacity: 0.3 
-                            }} 
+                        <div
+                            style={{
+                                flex: 1,
+                                borderBottom: '2px solid #888',
+                                opacity: 0.3
+                            }}
                         />
-                        <span 
-                            style={{ 
-                                margin: '0 24px', 
-                                fontWeight: 700, 
-                                fontSize: 22, 
-                                color: '#ccc', 
-                                background: '#23272f', 
-                                borderRadius: 8, 
-                                padding: '2px 24px', 
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)', 
-                                border: '1px solid #333', 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                height: 40 
+                        <span
+                            style={{
+                                margin: '0 24px',
+                                fontWeight: 700,
+                                fontSize: 22,
+                                color: '#ccc',
+                                background: '#23272f',
+                                borderRadius: 8,
+                                padding: '2px 24px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                border: '1px solid #333',
+                                display: 'flex',
+                                alignItems: 'center',
+                                height: 40
                             }}
                         >
                             {image.name}
                         </span>
-                        <div 
-                            style={{ 
-                                flex: 1, 
-                                borderBottom: '2px solid #888', 
-                                opacity: 0.3 
-                            }} 
+                        <div
+                            style={{
+                                flex: 1,
+                                borderBottom: '2px solid #888',
+                                opacity: 0.3
+                            }}
                         />
                     </div>
                 </div>
@@ -157,34 +158,34 @@ const GalleryImageGrid = () => {
         }
         if (image.type === 'empty-space') {
             return (
-                <div 
-                    key={`empty-space-${index}`} 
-                    style={{ 
-                        ...style, 
-                        background: 'transparent' 
-                    }} 
+                <div
+                    key={`empty-space-${index}`}
+                    style={{
+                        ...style,
+                        background: 'transparent'
+                    }}
                 />
             );
         }
         // Add folder info to drag data by wrapping ImageCard
         return (
-            <div 
-                key={`div-${image.name}`} 
-                style={{ 
-                    ...style, 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center' 
+            <div
+                key={`div-${image.name}`}
+                style={{
+                    ...style,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
                 }}
             >
-                <ImageCard 
-                    image={{ 
-                        ...image, 
-                        dragFolder: currentFolder 
-                    }} 
-                    key={image.name} 
-                    index={index} 
-                    onInfoClick={() => handleInfoClick(image.name)} onVideoClick={() => setPreviewingVideo(image.name)} 
+                <ImageCard
+                    image={{
+                        ...image,
+                        dragFolder: currentFolder
+                    }}
+                    key={image.name}
+                    index={index}
+                    onInfoClick={() => handleInfoClick(image.name)} onVideoClick={() => setPreviewingVideo(image.name)}
                 />
             </div>
         );
@@ -208,7 +209,7 @@ const GalleryImageGrid = () => {
 
     // Memoized previewable images for InfoView navigation and rendering
     const previewableImages = useMemo(() =>
-        imagesDetailsList.filter(img => img.type === "image" || img.type === "media" || img.type === "audio"),
+        imagesDetailsList.filter(img => img.type === "image" || img.type === "media" || img.type === "audio" || img.type === "3d"),
         [imagesDetailsList]
     );
 
@@ -238,20 +239,80 @@ const GalleryImageGrid = () => {
         return resolved;
     }, [previewableImages, imagesDetailsList, setImageInfoName]);
 
-    // Memoized imageRender for InfoView
-    const infoImageRender = useCallback((originalNode: React.ReactElement, info: { current: number; }) => {
-        let image = data?.folders?.[currentFolder]?.[imageInfoName ?? ""];
-        image = resolvePreviewableImage(image, info);
-        if (!image) return null;
-        return (
-            <MetadataView
-                image={image}
-                onShowRaw={() => setShowRawMetadata(true)}
-                showRawMetadata={showRawMetadata}
-                setShowRawMetadata={setShowRawMetadata}
-            />
-        );
-    }, [data, currentFolder, imageInfoName, setShowRawMetadata, showRawMetadata, resolvePreviewableImage]);
+    const stopPropagation = useCallback((e: React.SyntheticEvent) => {
+        e.stopPropagation();
+        e.nativeEvent.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+    }, []);
+
+    const customImageRender = useCallback((originalNode: React.ReactElement, info: { current: number }) => {
+        if (imageInfoName != undefined) {
+            let image = previewableImages[info.current];
+            if (!image) return originalNode;
+            return (
+                <MetadataView
+                    image={image}
+                    onShowRaw={() => setShowRawMetadata(true)}
+                    showRawMetadata={showRawMetadata}
+                    setShowRawMetadata={setShowRawMetadata}
+                />
+            );
+        } else {
+            let image = previewableImages[info.current];
+            if (!image) return originalNode;
+            if (image.type === 'audio') {
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                        <h2 style={{ color: 'white', marginBottom: '24px', maxWidth: '80%', textAlign: 'center', wordWrap: 'break-word' }}>
+                            {image.name}
+                        </h2>
+                        <audio
+                            key={image.name}
+                            style={{ maxWidth: "-webkit-fill-available", width: "80%" }}
+                            src={`${BASE_PATH}${image.url}`}
+                            autoPlay={true}
+                            controls={true}
+                            preload="none"
+                            ref={el => {
+                                if (el && !settings.autoPlayVideos) {
+                                    el.pause(); el.currentTime = 0;
+                                }
+                            }}
+                        />
+                    </div>
+                );
+            }
+            if (image.type === '3d') {
+                return (
+                    <div
+                        style={{ width: '80vw', maxWidth: 1000, height: '70vh', cursor: 'grab' }}
+                        onMouseDown={stopPropagation}
+                        onTouchStart={stopPropagation}
+                    >
+                        <ModelViewer url={`${BASE_PATH}${image.url}`} type={image.name.split('.').pop()?.toLowerCase() || ''} />
+                    </div>
+                );
+            }
+            if (image.type === 'media') {
+                return (
+                    <video
+                        key={image.name}
+                        style={{ maxWidth: "-webkit-fill-available", width: "80%" }}
+                        src={`${BASE_PATH}${image.url}`}
+                        autoPlay={true}
+                        controls={true}
+                        preload="none"
+                        ref={el => {
+                            if (el && !settings.autoPlayVideos) {
+                                el.pause(); el.currentTime = 0;
+                            }
+                        }}
+                    />
+                );
+            }
+            return originalNode;
+        }
+    }, [imageInfoName, previewableImages, showRawMetadata, setShowRawMetadata, settings.autoPlayVideos, stopPropagation]);
 
     // Memoized onChange for InfoView
     const infoOnChange = useCallback((current: number, prevCurrent: number) => {
@@ -263,57 +324,12 @@ const GalleryImageGrid = () => {
         if (!open) setImageInfoName(undefined);
     }, [setImageInfoName]);
 
-    // Memoized media (video/audio) imageRender
-    const videoImageRender = useCallback((originalNode: any, info: any) => {
-        let image = data?.folders?.[currentFolder]?.[previewingVideo ?? ""];
-        image = resolvePreviewableImage(image, info);
-        if (!image) return null;
-        if (image.type === 'audio') {
-            return (
-                <audio
-                    key={image.name}
-                    style={{
-                        maxWidth: "-webkit-fill-available",
-                        width: "80%"
-                    }}
-                    src={`${BASE_PATH}${image.url}`}
-                    autoPlay={true}
-                    controls={true}
-                    preload="none"
-                    ref={el => {
-                        if (el && !settings.autoPlayVideos) {
-                            el.pause();
-                            el.currentTime = 0;
-                        }
-                    }}
-                />
-            );
-        }
-        return (
-            <video
-                key={image.name}
-                style={{
-                    maxWidth: "-webkit-fill-available",
-                    width: "80%"
-                }}
-                src={`${BASE_PATH}${image.url}`}
-                autoPlay={true}
-                controls={true}
-                preload="none"
-                ref={el => {
-                    if (el && !settings.autoPlayVideos) {
-                        el.pause();
-                        el.currentTime = 0;
-                    }
-                }}
-            />
-        );
-    }, [data, currentFolder, previewingVideo, settings.autoPlayVideos, resolvePreviewableImage]);
+
 
     // Memoized onChange for video preview
     const videoOnChange = useCallback((current: number, prevCurrent: number) => {
         const t = previewableImages[current]?.type;
-        if (t == "media" || t == "audio") {
+        if (t == "media" || t == "audio" || t == "3d") {
             setPreviewingVideo(previewableImages[current]?.name);
         } else {
             setPreviewingVideo(undefined);
@@ -355,7 +371,7 @@ const GalleryImageGrid = () => {
                 items={imagesUrlsLists}
                 preview={(imageInfoName != undefined) ? {
                     current: previewableCurrentIndex,
-                    imageRender: infoImageRender,
+                    imageRender: customImageRender,
                     toolbarRender: () => null,
                     onChange: infoOnChange,
                     afterOpenChange: infoAfterOpenChange,
@@ -363,8 +379,8 @@ const GalleryImageGrid = () => {
                 } : {
                     current: previewableCurrentIndex,
                     onChange: videoOnChange,
-                    imageRender: previewingVideo != undefined ? videoImageRender : undefined,
-                    toolbarRender: previewingVideo != undefined ? () => null : undefined,
+                    imageRender: customImageRender,
+                    toolbarRender: () => previewingVideo != undefined ? null : undefined,
                     destroyOnClose: true,
                     afterOpenChange(open) {
                         if (!open) setPreviewingVideo(undefined);
@@ -372,14 +388,14 @@ const GalleryImageGrid = () => {
                 }}
             >
                 {imagesDetailsList.length === 0 ? (
-                    <Empty 
-                        style={{ 
-                            position: "absolute", 
-                            top: "50%", 
-                            left: "50%", 
-                            transform: "translate(-50%, -50%)" 
-                        }} 
-                        description={"No images found"} 
+                    <Empty
+                        style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)"
+                        }}
+                        description={"No images found"}
                     />
                 ) : (
                     <AutoSizer>
@@ -396,10 +412,10 @@ const GalleryImageGrid = () => {
                                     width={width}
                                     height={height}
                                     className={"grid-element"}
-                                    style={{ 
-                                        display: "flex", 
-                                        alignContent: "center", 
-                                        justifyContent: "center" 
+                                    style={{
+                                        display: "flex",
+                                        alignContent: "center",
+                                        justifyContent: "center"
                                     }}
                                 >
                                     {Cell}

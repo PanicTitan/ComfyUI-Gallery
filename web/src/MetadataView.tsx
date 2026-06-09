@@ -9,20 +9,22 @@ import { useGalleryContext } from './GalleryContext';
 import Card from 'antd/es/card/Card';
 import CopyOutlined from '@ant-design/icons/lib/icons/CopyOutlined';
 import DownloadOutlined from '@ant-design/icons/lib/icons/DownloadOutlined';
+import SoundOutlined from '@ant-design/icons/lib/icons/SoundOutlined';
 import { saveAs } from 'file-saver';
+import { ModelViewer } from './ModelViewer';
 
 const PROMPT_ROW_LIMIT = 6;
 
-export function MetadataView({ 
-    image, 
-    onShowRaw, 
-    showRawMetadata, 
-    setShowRawMetadata 
-}: { 
-    image: FileDetails, 
-    onShowRaw: () => void, 
-    showRawMetadata: boolean, 
-    setShowRawMetadata: (show: boolean) => void 
+export function MetadataView({
+    image,
+    onShowRaw,
+    showRawMetadata,
+    setShowRawMetadata
+}: {
+    image: FileDetails,
+    onShowRaw: () => void,
+    showRawMetadata: boolean,
+    setShowRawMetadata: (show: boolean) => void
 }) {
     const meta = useMemo(() => parseComfyMetadata(image.metadata), [image.metadata]);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -41,10 +43,10 @@ export function MetadataView({
                     expanded: isExpanded,
                     onExpand: () => setExpandedKeys(k => ({ ...k, [key]: !isExpanded })),
                 } : false}
-                style={{ 
-                    marginBottom: 0, 
-                    whiteSpace: 'pre-line', 
-                    wordBreak: 'break-word' 
+                style={{
+                    marginBottom: 0,
+                    whiteSpace: 'pre-line',
+                    wordBreak: 'break-word'
                 }}
             >
                 {value}
@@ -57,25 +59,25 @@ export function MetadataView({
         const isPrompt = key.toLowerCase().includes('prompt');
         return {
             label: (
-                <Typography 
+                <Typography
                     style={{ fontWeight: 600 }}
-                >   
+                >
                     {key}
                 </Typography>
             ),
             children: (
-                <Tooltip 
-                    title={copiedKey === key ? 'Copied!' : 'Click to copy'} 
+                <Tooltip
+                    title={copiedKey === key ? 'Copied!' : 'Click to copy'}
                     placement="top"
-                    color={copiedKey === key ? 'blue' : undefined} 
+                    color={copiedKey === key ? 'blue' : undefined}
                 >
                     <Typography
-                        style={{ 
-                            cursor: 'pointer', 
-                            wordBreak: 'break-word', 
-                            whiteSpace: 'pre-line', 
-                            display: 'block', 
-                            maxWidth: 420 
+                        style={{
+                            cursor: 'pointer',
+                            wordBreak: 'break-word',
+                            whiteSpace: 'pre-line',
+                            display: 'block',
+                            maxWidth: 420
                         }}
                         onClick={() => {
                             navigator.clipboard.writeText(value);
@@ -179,8 +181,8 @@ export function MetadataView({
                     alignItems: "center",
                 }}
             >
-                <div 
-                    style={{ 
+                <div
+                    style={{
                         display: "flex",
                         justifyContent: "flex-start",
                         alignItems: "center",
@@ -193,11 +195,11 @@ export function MetadataView({
                         placeContent: "space-between"
                     }}
                 >
-                    <Tooltip 
-                        title="Show the raw JSON metadata" 
+                    <Tooltip
+                        title="Show the raw JSON metadata"
                         placement="left"
                     >
-                        <Button 
+                        <Button
                             type='dashed'
                             onClick={onShowRaw}
                         >
@@ -212,7 +214,7 @@ export function MetadataView({
                         okText="Yes"
                         cancelText="No"
                     >
-                        <Button 
+                        <Button
                             danger
                             type='primary'
                         >
@@ -220,15 +222,15 @@ export function MetadataView({
                         </Button>
                     </Popconfirm>
                 </div>
-                <div 
-                    style={{ 
-                        position: 'relative', 
-                        width: 'fit-content', 
-                        margin: '0 auto' 
+                <div
+                    style={{
+                        position: 'relative',
+                        width: 'fit-content',
+                        margin: '0 auto'
                     }}
                 >
                     {/* Overlay buttons */}
-                    <div 
+                    <div
                         style={{
                             position: 'absolute',
                             top: 8,
@@ -245,11 +247,11 @@ export function MetadataView({
                                     shape="circle"
                                     icon={<CopyOutlined />}
                                     size="small"
-                                    style={{ 
-                                        background: '#222', 
-                                        color: '#fff', 
-                                        border: 'none', 
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.12)' 
+                                    style={{
+                                        background: '#222',
+                                        color: '#fff',
+                                        border: 'none',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
                                     }}
                                     onClick={async () => {
                                         try {
@@ -298,11 +300,11 @@ export function MetadataView({
                                 shape="circle"
                                 icon={<DownloadOutlined />}
                                 size="small"
-                                style={{ 
-                                    background: '#222', 
-                                    color: '#fff', 
-                                    border: 'none', 
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)' 
+                                style={{
+                                    background: '#222',
+                                    color: '#fff',
+                                    border: 'none',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
                                 }}
                                 onClick={handleDownload}
                             />
@@ -338,12 +340,25 @@ export function MetadataView({
                         />
                     )}
                     {image.type == "audio" && (
-                        <audio
-                            src={`${BASE_PATH}${image.url}`}
-                            autoPlay={true}
-                            controls={true}
-                            preload="none"
-                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '420px', height: '400px', background: '#23272f', borderRadius: 12 }}>
+                            <SoundOutlined style={{ fontSize: '100px', color: '#1890ff', marginBottom: '40px' }} />
+                            <audio
+                                style={{ width: '80%' }}
+                                src={`${BASE_PATH}${image.url}`}
+                                autoPlay={true}
+                                controls={true}
+                                preload="none"
+                            />
+                        </div>
+                    )}
+                    {image.type == "3d" && (
+                        <div 
+                            style={{ width: '80vw', maxWidth: 1000, height: '70vh', cursor: 'grab' }}
+                            onMouseDown={e => e.stopPropagation()}
+                            onTouchStart={e => e.stopPropagation()}
+                        >
+                            <ModelViewer url={`${BASE_PATH}${image.url}`} type={image.name.split('.').pop()?.toLowerCase() || ''} />
+                        </div>
                     )}
                 </div>
             </div>
@@ -353,21 +368,21 @@ export function MetadataView({
                         bordered
                         column={1}
                         items={items}
-                        style={{ 
+                        style={{
                             // background: 'rgba(30, 30, 30, 0.97)', 
                             color: "black",
-                            borderRadius: 8, 
-                            padding: 8, 
-                            width: '100%', 
-                            maxWidth: 520 
+                            borderRadius: 8,
+                            padding: 8,
+                            width: '100%',
+                            maxWidth: 520
                         }}
-                        styles={{ 
+                        styles={{
                             label: {
-                                fontWeight: 600, 
-                                width: 120, 
+                                fontWeight: 600,
+                                width: 120,
                             },
                             content: {
-                                fontWeight: 400, 
+                                fontWeight: 400,
                             }
                         }}
                     />
@@ -387,17 +402,22 @@ export function MetadataView({
                 centered
             >
                 {image && showRawMetadata && (
-                    <ReactJsonView
-                        theme={settings.darkMode ? "apathy" : "apathy:inverted"}
-                        src={image.metadata || {}}
-                        name={false}
-                        collapsed={2}
-                        enableClipboard={true}
-                        displayDataTypes={false}
-                        style={{ 
+                    <div
+                        onMouseDown={e => e.stopPropagation()}
+                        onTouchStart={e => e.stopPropagation()}
+                    >
+                        <ReactJsonView
+                            theme={settings.darkMode ? "apathy" : "apathy:inverted"}
+                            src={image.metadata || {}}
+                            name={false}
+                            collapsed={2}
+                            enableClipboard={true}
+                            displayDataTypes={false}
+                            style={{
 
-                        }}
-                    />
+                            }}
+                        />
+                    </div>
                 )}
             </Modal>
         </div>

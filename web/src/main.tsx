@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS, STORAGE_KEY, type SettingsState } from './GalleryCont
 import { ComfyAppApi, OPEN_BUTTON_ID } from './ComfyAppApi.ts';
 import { ConfigProvider, theme } from 'antd';
 import { useLocalStorageState } from 'ahooks';
+import { ModelThumbnailProvider } from './GlobalModelRenderer';
 
 function waitForElement(selectorOrSelectors: string | string[], delay = 1500, timeout = 10000): Promise<Element | null> {
     return new Promise((resolve) => {
@@ -46,10 +47,10 @@ function waitForElement(selectorOrSelectors: string | string[], delay = 1500, ti
             for (let i = 0; i < selectors.length; i++) {
                 const selector = selectors[i];
                 const el = document.querySelector(selector);
-                
+
                 if (el) {
                     // Found a match at priority i
-                    
+
                     // Case A: Highest priority (index 0). Resolve immediately.
                     if (i === 0) {
                         finish(el);
@@ -71,9 +72,9 @@ function waitForElement(selectorOrSelectors: string | string[], delay = 1500, ti
                             if (bestMatch) finish(bestMatch.el);
                         }, delay);
                     }
-                    
+
                     // Stop checking lower priorities for this pass
-                    return; 
+                    return;
                 }
             }
         };
@@ -107,6 +108,7 @@ ComfyAppApi.registerExtension({
             // Define the priority list of selectors to look for
             const potentialSelectors = [
                 settings.buttonBoxQuery,
+                "#pv_id_28_content > div > div",
                 DEFAULT_SETTINGS.buttonBoxQuery,
                 "div.workflow-tabs-container div div.workflow-tabs-container", // Newer ComfyUI
             ].filter((s): s is string => !!s && s.trim().length > 0); // Remove empty/null strings
@@ -170,7 +172,9 @@ function Main() {
             }}
         >
             <App>
-                <Gallery />
+                <ModelThumbnailProvider>
+                    <Gallery />
+                </ModelThumbnailProvider>
             </App>
         </ConfigProvider>
     </>);

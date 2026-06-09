@@ -11,14 +11,14 @@ import { useClickAway } from 'ahooks';
 
 function getImages(): Promise<FilesTree> {
     return new Promise(async (resolve, reject) => {
-            try {
-                let settings = DEFAULT_SETTINGS;
+        try {
+            let settings = DEFAULT_SETTINGS;
             try {
                 const raw = localStorage.getItem('comfy-ui-gallery-settings');
                 if (raw) settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-            } catch {}
-            
-            let request = await ComfyAppApi.fetchImages(settings.relativePath); 
+            } catch { }
+
+            let request = await ComfyAppApi.fetchImages(settings.relativePath);
             let json: FilesTree = await request.json();
             resolve(json);
         } catch (error) {
@@ -35,12 +35,14 @@ export interface SettingsState {
     floatingButton: boolean;
     autoPlayVideos: boolean;
     hideOpenButton: boolean;
-    darkMode: boolean; 
+    darkMode: boolean;
     galleryShortcut: boolean;
-    expandAllFolders: boolean; 
+    expandAllFolders: boolean;
     disableLogs: boolean;
     usePollingObserver: boolean;
-    scanExtensions: string[]; 
+    scanExtensions: string[];
+    imageThumbFit: 'width' | 'height';
+    videoThumbFit: 'width' | 'height';
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
@@ -51,12 +53,14 @@ export const DEFAULT_SETTINGS: SettingsState = {
     floatingButton: true,
     autoPlayVideos: true,
     hideOpenButton: false,
-    darkMode: false, 
-    galleryShortcut: true, 
-    expandAllFolders: true, 
+    darkMode: false,
+    galleryShortcut: true,
+    expandAllFolders: true,
     disableLogs: false,
     usePollingObserver: false,
-    scanExtensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'gif', 'webm', 'mov', 'wav', 'mp3', 'm4a', 'flac'],
+    scanExtensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'gif', 'webm', 'mov', 'wav', 'mp3', 'm4a', 'flac', 'obj', 'glb', 'gltf', 'fbx', 'stl', 'usd', 'usdz'],
+    imageThumbFit: 'width',
+    videoThumbFit: 'height',
 };
 export const STORAGE_KEY = 'comfy-ui-gallery-settings';
 
@@ -128,7 +132,16 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         listenStorageChange: true,
     });
 
-    useAsyncEffect(async () => { 
+    useEffect(() => {
+        if (data && data.folders) {
+            const keys = Object.keys(data.folders);
+            if (keys.length > 0 && !data.folders[currentFolder]) {
+                setCurrentFolder(keys.sort()[0]);
+            }
+        }
+    }, [data, currentFolder]);
+
+    useAsyncEffect(async () => {
         // Fetch saved server settings and merge with defaults
         try {
             const serverSettings = await ComfyAppApi.fetchSettings();
@@ -141,9 +154,9 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
                 });
                 setSettings(merged as SettingsState);
             }
-        } catch (e) {}
+        } catch (e) { }
 
-        runAsync(); 
+        runAsync();
 
         ComfyAppApi.onFileChange((event) => {
             console.log("file_change:", event.detail);
@@ -154,7 +167,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
             console.log("update:", event.detail);
             updateImages(event.detail); // Pass the whole object, not event.detail.folders
         });
-        
+
         ComfyAppApi.onClear((event) => {
             mutate({ folders: {} });
         });
@@ -169,9 +182,10 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (settingsState?.relativePath) {
+            setCurrentFolder("");
             ComfyAppApi.startMonitoring(
-                settingsState.relativePath, 
-                settingsState.disableLogs, 
+                settingsState.relativePath,
+                settingsState.disableLogs,
                 settingsState.usePollingObserver,
                 settingsState.scanExtensions // Pass extensions here
             );
@@ -223,13 +237,13 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
 
     // Memoized list of image URLs for preview
     const imagesUrlsLists = useMemo(() =>
-        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio").map(image => `${BASE_PATH}${image.url}`),
+        imagesDetailsList.filter(image => image.type === "image" || image.type === "media" || image.type === "audio" || image.type === "3d").map(image => `${BASE_PATH}${image.url}`),
         [imagesDetailsList]
     );
 
     // Memoized autocomplete options for image names
     const imagesAutoCompleteNames = useMemo<NonNullable<AutoCompleteProps['options']>>(() => {
-        let filtered = imagesDetailsList.filter(image => (image.type === "image" || image.type === "media" || image.type === "audio") && typeof image.name === 'string');
+        let filtered = imagesDetailsList.filter(image => (image.type === "image" || image.type === "media" || image.type === "audio" || image.type === "3d") && typeof image.name === 'string');
         if (sortMethod === 'Name ↑') {
             filtered = filtered.sort((a, b) => (a.name as string).localeCompare(b.name as string));
         } else if (sortMethod === 'Name ↓') {
@@ -322,7 +336,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
                 event.stopPropagation();
                 event.stopImmediatePropagation();
                 document.getElementById(OPEN_BUTTON_ID)?.click();
-            } catch {}
+            } catch { }
         }
     });
 
@@ -352,29 +366,29 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         siderCollapsed,
         setSiderCollapsed,
     }), [
-        currentFolder, 
-        searchFileName, 
-        showDateDivider, 
-        showSettings, 
-        showRawMetadata, 
-        sortMethod, 
-        imageInfoName, 
-        open, 
-        previewingVideo, 
-        size, 
-        imagesBoxSize, 
-        data, 
-        error, 
-        loading, 
-        runAsync, 
+        currentFolder,
+        searchFileName,
+        showDateDivider,
+        showSettings,
+        showRawMetadata,
+        sortMethod,
+        imageInfoName,
+        open,
+        previewingVideo,
+        size,
+        imagesBoxSize,
+        data,
+        error,
+        loading,
+        runAsync,
         mutate,
-        gridSize, 
-        autoSizer, 
-        imagesDetailsList, 
-        imagesUrlsLists, 
-        imagesAutoCompleteNames, 
+        gridSize,
+        autoSizer,
+        imagesDetailsList,
+        imagesUrlsLists,
+        imagesAutoCompleteNames,
         autoCompleteOptions,
-        settingsState, 
+        settingsState,
         saveSettings,
         selectedImages,
         setSelectedImages,
@@ -382,7 +396,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         setSiderCollapsed,
     ]);
 
-    return <GalleryContext.Provider 
+    return <GalleryContext.Provider
         value={value}
     >
         {children}

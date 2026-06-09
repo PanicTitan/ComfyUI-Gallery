@@ -166,7 +166,14 @@ async def start_gallery_monitor(request):
         scan_extensions = data.get("scan_extensions", DEFAULT_EXTENSIONS)
         disable_logs = gallery_config.disable_logs
         use_polling_observer = gallery_config.use_polling_observer
-        full_monitor_path = os.path.normpath(os.path.join(folder_paths.get_output_directory(), "..", "output", relative_path))
+        # Resolve path consistently with /Gallery/images endpoint
+        base_output_dir = folder_paths.get_output_directory()
+        if os.path.isabs(relative_path):
+            full_monitor_path = os.path.normpath(relative_path)
+        elif relative_path in ("./", ".", ""):
+            full_monitor_path = base_output_dir
+        else:
+            full_monitor_path = os.path.normpath(os.path.join(base_output_dir, relative_path))
         gallery_log("disable_logs", disable_logs)
         gallery_log("use_polling_observer", use_polling_observer)
         if monitor and monitor.thread and monitor.thread.is_alive():
@@ -233,7 +240,9 @@ async def delete_image(request):
         full_image_path = os.path.normpath(os.path.join(static_dir, relative_path))
         if not os.path.exists(full_image_path):
             return web.Response(status=404, text=f"File not found: {full_image_path}")
-        if not full_image_path.startswith(os.path.realpath(static_dir)):
+        real_full_path = os.path.realpath(full_image_path)
+        real_static_dir = os.path.realpath(static_dir)
+        if not os.path.commonpath([real_full_path, real_static_dir]) == real_static_dir:
             return web.Response(status=403, text="Access denied: File outside of static directory")
         os.remove(full_image_path)
         return web.Response(text=f"Image deleted: {image_url}")
@@ -276,10 +285,16 @@ async def move_image(request):
         gallery_log(f"full_target_path: {full_target_path}")
         if not os.path.exists(full_source_path):
             return web.Response(status=404, text=f"Source file not found: {full_source_path}")
-        if not os.path.realpath(full_source_path).startswith(os.path.realpath(static_dir)) or \
-            not os.path.realpath(full_target_path).startswith(os.path.realpath(static_dir)) or \
-            not os.path.realpath(full_source_path).startswith(os.path.realpath(comfy_path)) or \
-            not os.path.realpath(full_target_path).startswith(os.path.realpath(comfy_path)):
+        
+        real_source_path = os.path.realpath(full_source_path)
+        real_target_path = os.path.realpath(full_target_path)
+        real_static_dir = os.path.realpath(static_dir)
+        real_comfy_path = os.path.realpath(comfy_path)
+
+        if not os.path.commonpath([real_source_path, real_static_dir]) == real_static_dir or \
+            not os.path.commonpath([real_target_path, real_static_dir]) == real_static_dir or \
+            not os.path.commonpath([real_source_path, real_comfy_path]) == real_comfy_path or \
+            not os.path.commonpath([real_target_path, real_comfy_path]) == real_comfy_path:
             return web.Response(status=403, text="Access denied: File outside of allowed directory")
         if os.path.isdir(full_target_path):
             full_target_path = os.path.join(full_target_path, os.path.basename(full_source_path))

@@ -1,9 +1,10 @@
 import Modal from 'antd/es/modal/Modal';
-import { Button, Flex, Input, Switch, Typography } from 'antd';
+import { Button, Flex, Input, Select, Switch, Typography } from 'antd';
 import { useGalleryContext, type SettingsState } from './GalleryContext';
 import { useSetState } from 'ahooks';
 import { useEffect, useState } from 'react';
 import { BASE_Z_INDEX } from './ComfyAppApi';
+import { GithubOutlined } from '@ant-design/icons';
 
 const GallerySettingsModal = () => {
     const { showSettings, setShowSettings, settings, setSettings } = useGalleryContext();
@@ -40,21 +41,23 @@ const GallerySettingsModal = () => {
             afterOpenChange={setShowSettings}
             onOk={handleSave}
             onCancel={handleCancel}
-            footer={[
-                <Button 
-                    key="back" 
-                    onClick={handleCancel}
-                >
-                    Return
-                </Button>,
-                <Button 
-                    key="submit" 
-                    type="primary" 
-                    onClick={handleSave}
-                >
-                    Save
-                </Button>
-            ]}
+            footer={(
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <Button 
+                        type="link" 
+                        href="https://github.com/PanicTitan/ComfyUI-Gallery" 
+                        target="_blank" 
+                        icon={<GithubOutlined />}
+                        style={{ paddingLeft: 0 }}
+                    >
+                        Leave a Star!
+                    </Button>
+                    <div>
+                        <Button key="back" onClick={handleCancel}>Return</Button>
+                        <Button key="submit" type="primary" onClick={handleSave} style={{ marginLeft: 8 }}>Save</Button>
+                    </div>
+                </div>
+            )}
         >
             <Flex 
                 vertical 
@@ -147,6 +150,32 @@ const GallerySettingsModal = () => {
                     checked={staged.usePollingObserver}
                     onChange={checked => setStaged({ usePollingObserver: checked })}
                 />
+                <div>
+                    <Typography.Title level={5}>Image Thumb Fit:</Typography.Title>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Constrain image thumbnails in the grid by width or height</Typography.Text>
+                    <Select
+                        value={staged.imageThumbFit}
+                        onChange={val => setStaged({ imageThumbFit: val })}
+                        style={{ width: '100%' }}
+                        options={[
+                            { value: 'width', label: 'Fit Width' },
+                            { value: 'height', label: 'Fit Height' },
+                        ]}
+                    />
+                </div>
+                <div>
+                    <Typography.Title level={5}>Video Thumb Fit:</Typography.Title>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Constrain video thumbnails in the grid by width or height</Typography.Text>
+                    <Select
+                        value={staged.videoThumbFit}
+                        onChange={val => setStaged({ videoThumbFit: val })}
+                        style={{ width: '100%' }}
+                        options={[
+                            { value: 'width', label: 'Fit Width' },
+                            { value: 'height', label: 'Fit Height' },
+                        ]}
+                    />
+                </div>
                 <div>
                     <Typography.Title level={5}>Scan File Extensions:</Typography.Title>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>Comma separated (e.g. png, jpg, mp4, wav)</Typography.Text>

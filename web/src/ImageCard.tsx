@@ -6,6 +6,58 @@ import React, { useRef, useState } from 'react';
 import { useDrag, useEventListener } from 'ahooks';
 import { useGalleryContext } from './GalleryContext';
 import { BASE_PATH } from './ComfyAppApi';
+import { use3DThumbnail } from './GlobalModelRenderer';
+
+const ImageCard3DThumbnail = ({ image, onClick }: { image: FileDetails, onClick: () => void }) => {
+    const typeMatch = image.url.match(/\.([^.]+)$/);
+    const type = typeMatch ? typeMatch[1].toLowerCase() : '';
+    const thumbnail = use3DThumbnail(`${BASE_PATH}${image.url}`, type);
+
+    if (thumbnail) {
+        return (
+            <>
+                <img
+                    style={{
+                        objectFit: "cover",
+                        maxWidth: ImageCardWidth,
+                        width: '100%',
+                        height: '100%',
+                        userSelect: 'none',
+                        cursor: 'pointer',
+                    }}
+                    src={thumbnail}
+                    onClick={onClick}
+                    alt={image.name}
+                    draggable={false}
+                />
+                <Image
+                    id={image.url}
+                    style={{ display: 'none' }}
+                    src={`${BASE_PATH}${image.url}`}
+                    onClick={onClick}
+                />
+            </>
+        );
+    }
+
+    return (
+        <div
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', background: '#23272f', cursor: 'pointer' }}
+            onClick={onClick}
+        >
+            <div style={{ fontSize: '64px', color: '#1890ff', marginBottom: '24px', fontWeight: 'bold' }}>3D</div>
+            <Typography.Text style={{ padding: '0 16px', textAlign: 'center', maxWidth: '100%' }} ellipsis>
+                {image.name}
+            </Typography.Text>
+            <Image
+                id={image.url}
+                style={{ display: 'none' }}
+                src={`${BASE_PATH}${image.url}`}
+                onClick={onClick}
+            />
+        </div>
+    );
+};
 
 export const ImageCardWidth = 350;
 export const ImageCardHeight = 450;
@@ -107,22 +159,22 @@ function ImageCard({
             onClick={handleCardClick}
         >
             {image.type == "image" ? (<>
-                <Image 
+                <Image
                     id={image.url}
-                    style={{ 
+                    style={{
                         objectFit: "cover",
-                        maxWidth: ImageCardWidth,
-                        width: '100%',
-                        height: 'auto',
+                        ...(settings.imageThumbFit === 'height'
+                            ? { maxHeight: ImageCardHeight, width: 'auto', maxWidth: '100%' }
+                            : { maxWidth: ImageCardWidth, width: '100%', height: 'auto' }),
                         userSelect: 'none',
                         cursor: 'grab',
-                    }} 
+                    }}
                     src={`${BASE_PATH}${image.url}`}
                     loading="lazy"
                     // preview={false}
                     onClick={() => {
                         // Ensure any leftover media preview state is cleared so this opens as an image
-                        try { setPreviewingVideo(undefined); } catch {}
+                        try { setPreviewingVideo(undefined); } catch { }
                         // Trigger the preview
                         document.getElementById(image.url)?.click();
                     }}
@@ -131,9 +183,15 @@ function ImageCard({
                     onDragStart={handleNativeDragStart}
                 />
             </>) : image.type === "audio" ? (<>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                <div
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', cursor: 'pointer' }}
+                    onClick={() => {
+                        try { setPreviewingVideo(undefined); } catch { }
+                        document.getElementById(image.url)?.click();
+                    }}
+                >
                     <SoundOutlined style={{ fontSize: '64px', color: '#1890ff', marginBottom: '24px' }} />
-                    <Typography.Text style={{ marginBottom: '16px', padding: '0 16px', textAlign: 'center', maxWidth: '100%', color: '#e6e6e6' }} ellipsis>
+                    <Typography.Text style={{ marginBottom: '16px', padding: '0 16px', textAlign: 'center', maxWidth: '100%' }} ellipsis>
                         {image.name}
                     </Typography.Text>
                     <audio controls style={{ width: '90%', height: '40px' }} src={`${BASE_PATH}${image.url}`} onClick={(e) => e.stopPropagation()} />
@@ -145,12 +203,19 @@ function ImageCard({
                         alt={image.name}
                     />
                 </div>
-            </>) : <>
+            </>) : image.type === "3d" ? (
+                <ImageCard3DThumbnail image={image as any} onClick={() => {
+                    try { setPreviewingVideo(undefined); } catch { }
+                    document.getElementById(image.url)?.click();
+                }} />
+            ) : <>
                 <video
-                    style={{ 
-                        maxHeight: ImageCardHeight,
+                    style={{
+                        ...(settings.videoThumbFit === 'height'
+                            ? { maxHeight: ImageCardHeight }
+                            : { maxWidth: ImageCardWidth }),
                         cursor: "pointer"
-                    }} 
+                    }}
                     src={`${BASE_PATH}${image.url}`}
                     autoPlay={settings.autoPlayVideos}
                     loop={settings.autoPlayVideos}
@@ -163,11 +228,11 @@ function ImageCard({
                     draggable
                     onDragStart={handleNativeDragStart}
                 />
-                <Image 
+                <Image
                     id={image.url}
-                    style={{ 
+                    style={{
                         display: "none"
-                    }} 
+                    }}
                     src={`${BASE_PATH}${image.url}`}
                     loading="lazy"
                     // preview={false}
@@ -187,23 +252,23 @@ function ImageCard({
                     alignItems: "center",
                 }}
             >
-                <Typography.Text 
+                <Typography.Text
                     strong
-                    style={{ 
+                    style={{
                         margin: 0,
                         color: "white"
                     }}
                     ellipsis={{
-                        
+
                     }}
                 >
                     {image.name}
                 </Typography.Text>
-                <Button 
-                    color="cyan" 
-                    variant="filled" 
-                    icon={<InfoCircleOutlined />} 
-                    size={"middle"} 
+                <Button
+                    color="cyan"
+                    variant="filled"
+                    icon={<InfoCircleOutlined />}
+                    size={"middle"}
                     onClick={() => {
                         onInfoClick(image.name);
                         document.getElementById(image.url)?.click();

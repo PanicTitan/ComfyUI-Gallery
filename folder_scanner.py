@@ -3,11 +3,12 @@ import os
 from datetime import datetime
 from .metadata_extractor import buildMetadata  # Import metadata extractor
 
-# Default extensions include images, media and audio
+# Default extensions include images, media, audio, and 3D
 DEFAULT_EXTENSIONS = [
-    '.png', '.jpg', '.jpeg', '.webp',  # Images
-    '.mp4', '.gif', '.webm', '.mov',   # Media
-    '.wav', '.mp3', '.m4a', '.flac'    # Audio
+    '.png', '.jpg', '.jpeg', '.webp', '.gif',  # Images
+    '.mp4', '.webm', '.mov',   # Media
+    '.wav', '.mp3', '.m4a', '.flac',   # Audio
+    '.obj', '.glb', '.gltf', '.fbx', '.stl', '.usd', '.usdz' # 3D
 ]
 
 def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_extensions=None):
@@ -30,24 +31,22 @@ def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_exte
         nonlocal changed
         folder_content = {}  # Dictionary to hold files for the current folder
         try:
-            entries = os.listdir(dir_path)
-            file_entries = []
+            with os.scandir(dir_path) as it:
+                file_entries = []
+                for entry in it:
+                    if entry.is_dir(follow_symlinks=False):
+                        if include_subfolders and not entry.name.startswith("."):
+                            next_relative_path = os.path.join(relative_path, entry.name)
+                            scan_directory(entry.path, next_relative_path)
+                    elif entry.is_file(follow_symlinks=False):
+                        file_entries.append((entry.path, entry.name, entry.stat(follow_symlinks=False)))
+                        current_files.add(entry.path)
 
-            for entry in entries:
-                full_path = os.path.join(dir_path, entry)
-                if os.path.isdir(full_path):
-                    if include_subfolders and not entry.startswith("."):
-                        next_relative_path = os.path.join(relative_path, entry)
-                        scan_directory(full_path, next_relative_path)
-                elif os.path.isfile(full_path):
-                    file_entries.append((full_path, entry))
-                    current_files.add(full_path)
-
-            for full_path, entry in file_entries:
+            for full_path, entry, stat in file_entries:
                 lower_entry = entry.lower()
                 if lower_entry.endswith(allowed_extensions_tuple):
                     try:
-                        timestamp = os.path.getmtime(full_path)
+                        timestamp = stat.st_mtime
                         date_str = datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
                         rel_path = os.path.relpath(dir_path, full_base_path)
                         filename = entry
@@ -63,17 +62,19 @@ def _scan_for_images(full_base_path, base_path, include_subfolders, allowed_exte
                         file_type = "unknown"
                         ext = os.path.splitext(lower_entry)[1]
 
-                        if ext in ['.png', '.jpg', '.jpeg', '.webp']:
+                        if ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif']:
                             file_type = "image"
                             try:
                                 _, _, metadata = buildMetadata(full_path)
                             except Exception as e:
                                 print(f"Gallery Node: Error building metadata for {full_path}: {e}")
                                 metadata = {}
-                        elif ext in ['.mp4', '.gif', '.webm', '.mov']:
+                        elif ext in ['.mp4', '.webm', '.mov']:
                             file_type = "media"
                         elif ext in ['.wav', '.mp3', '.m4a', '.flac']:
                             file_type = "audio"
+                        elif ext in ['.obj', '.glb', '.gltf', '.fbx', '.stl', '.usd', '.usdz']:
+                            file_type = "3d"
 
                         folder_content[filename] = { 
                             "name": entry,

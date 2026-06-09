@@ -16,7 +16,7 @@ const GalleryHeader = () => {
         imagesAutoCompleteNames,
         autoCompleteOptions, setAutoCompleteOptions,
         setOpen,
-        selectedImages,
+        selectedImages, setSelectedImages,
         siderCollapsed, setSiderCollapsed
     } = useGalleryContext();
 
@@ -146,14 +146,19 @@ const GalleryHeader = () => {
                             let deleted = 0;
                             for (const url of selectedImages) {
                                 try {
-                                    await ComfyAppApi.deleteImage(url);
-                                    deleted++;
+                                    const success = await ComfyAppApi.deleteImage(url);
+                                    if (success) deleted++;
                                     await new Promise(res => setTimeout(res, 50));
                                 } catch (e) {
                                     console.error('Failed to delete image:', url, e);
                                 }
                             }
-                            message.success(`Deleted ${deleted} image(s).`);
+                            if (deleted > 0) {
+                                message.success(`Deleted ${deleted} image(s).`);
+                                setSelectedImages([]);
+                            } else {
+                                message.error(`Failed to delete images.`);
+                            }
                         }}
                         onCancel={() => message.info('Delete cancelled')}
                         okText={`Delete (${selectedImages.length})`}
