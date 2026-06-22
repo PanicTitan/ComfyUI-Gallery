@@ -114,10 +114,11 @@ async def get_gallery_images(request):
                 # Load saved settings to determine extensions
                 saved = load_settings()
                 scan_extensions = saved.get('scanExtensions', DEFAULT_EXTENSIONS)
+                deduplicate_symlinks = saved.get('deduplicateSymlinks', True)
                 # Use the actual folder name as the root key
                 folder_name = os.path.basename(full_monitor_path)
                 folders_with_metadata, _ = _scan_for_images(
-                    full_monitor_path, folder_name, True, scan_extensions
+                    full_monitor_path, folder_name, True, scan_extensions, deduplicate_symlinks
                 )
                 result_queue.put(folders_with_metadata)  # Put the result in the queue
             except Exception as e:
@@ -164,6 +165,7 @@ async def start_gallery_monitor(request):
         gallery_config.disable_logs = data.get("disable_logs", False)
         gallery_config.use_polling_observer = data.get("use_polling_observer", False)
         scan_extensions = data.get("scan_extensions", DEFAULT_EXTENSIONS)
+        deduplicate_symlinks = data.get("deduplicate_symlinks", True)
         disable_logs = gallery_config.disable_logs
         use_polling_observer = gallery_config.use_polling_observer
         # Resolve path consistently with /Gallery/images endpoint
@@ -189,7 +191,7 @@ async def start_gallery_monitor(request):
         else:
             gallery_log("Error: Placeholder static route not found!")
             return web.Response(status=500, text="Placeholder route not found.")
-        monitor = FileSystemMonitor(full_monitor_path, interval=1.0, use_polling_observer=use_polling_observer, extensions=scan_extensions)
+        monitor = FileSystemMonitor(full_monitor_path, interval=1.0, use_polling_observer=use_polling_observer, extensions=scan_extensions, deduplicate_symlinks=deduplicate_symlinks)
         monitor.start_monitoring()
         return web.Response(text="Gallery monitor started", content_type="text/plain")
     except Exception as e:

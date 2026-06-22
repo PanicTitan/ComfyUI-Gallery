@@ -66,7 +66,7 @@ const comfyApp = getComfyApp();
 const app = comfyApp ? comfyApp : mockApi;
 
 export const ComfyAppApi = {
-    startMonitoring: (relativePath: string, disableLogs?: boolean, usePollingObserver?: boolean, scanExtensions?: string[]) =>
+    startMonitoring: (relativePath: string, disableLogs?: boolean, usePollingObserver?: boolean, scanExtensions?: string[], deduplicateSymlinks?: boolean) =>
         app.api.fetchApi("/Gallery/monitor/start", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -74,7 +74,8 @@ export const ComfyAppApi = {
                 relative_path: relativePath,
                 disable_logs: disableLogs ?? false,
                 use_polling_observer: usePollingObserver ?? false,
-                scan_extensions: scanExtensions 
+                scan_extensions: scanExtensions,
+                deduplicate_symlinks: deduplicateSymlinks ?? true
             })
         }),
     stopMonitoring: () =>

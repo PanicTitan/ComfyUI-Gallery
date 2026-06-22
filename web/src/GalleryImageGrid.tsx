@@ -297,7 +297,10 @@ const GalleryImageGrid = () => {
                 return (
                     <video
                         key={image.name}
-                        style={{ maxWidth: "-webkit-fill-available", width: "80%" }}
+                        style={{
+                            maxWidth: "fit-content", width: "80%",
+                            maxHeight: "fit-content", height: "80%"
+                        }}
                         src={`${BASE_PATH}${image.url}`}
                         autoPlay={true}
                         controls={true}

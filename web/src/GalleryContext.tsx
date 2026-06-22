@@ -43,6 +43,7 @@ export interface SettingsState {
     scanExtensions: string[];
     imageThumbFit: 'width' | 'height';
     videoThumbFit: 'width' | 'height';
+    deduplicateSymlinks: boolean;
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
@@ -61,6 +62,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
     scanExtensions: ['png', 'jpg', 'jpeg', 'webp', 'mp4', 'gif', 'webm', 'mov', 'wav', 'mp3', 'm4a', 'flac', 'obj', 'glb', 'gltf', 'fbx', 'stl', 'usd', 'usdz'],
     imageThumbFit: 'width',
     videoThumbFit: 'height',
+    deduplicateSymlinks: true,
 };
 export const STORAGE_KEY = 'comfy-ui-gallery-settings';
 
@@ -187,11 +189,12 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
                 settingsState.relativePath,
                 settingsState.disableLogs,
                 settingsState.usePollingObserver,
-                settingsState.scanExtensions // Pass extensions here
+                settingsState.scanExtensions,
+                settingsState.deduplicateSymlinks
             );
             runAsync();
         }
-    }, [settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver, JSON.stringify(settingsState?.scanExtensions)]);
+    }, [settingsState?.relativePath, settingsState?.disableLogs, settingsState?.usePollingObserver, JSON.stringify(settingsState?.scanExtensions), settingsState?.deduplicateSymlinks]);
 
     // Memoized list of all images in the current folder
     const imagesDetailsList = useMemo(() => {
@@ -340,6 +343,11 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         }
     });
 
+    const mergedSettings = useMemo(() => ({
+        ...DEFAULT_SETTINGS,
+        ...(settingsState || {})
+    }), [settingsState]);
+
     const value = useMemo(() => ({
         currentFolder, setCurrentFolder,
         searchFileName, setSearchFileName,
@@ -359,7 +367,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         imagesAutoCompleteNames,
         autoCompleteOptions,
         setAutoCompleteOptions,
-        settings: settingsState || DEFAULT_SETTINGS,
+        settings: mergedSettings,
         setSettings: saveSettings,
         selectedImages,
         setSelectedImages,
@@ -388,7 +396,7 @@ export function GalleryProvider({ children }: { children: React.ReactNode }) {
         imagesUrlsLists,
         imagesAutoCompleteNames,
         autoCompleteOptions,
-        settingsState,
+        mergedSettings,
         saveSettings,
         selectedImages,
         setSelectedImages,

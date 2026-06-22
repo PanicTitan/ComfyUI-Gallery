@@ -1,0 +1,19 @@
+{
+    "_comment": "Rename the file to user_settings.json to use. Values here override defaults. On save settings changes the original file changes.",
+    "relativePath": null,
+    "buttonBoxQuery": null,
+    "buttonLabel": null,
+    "showDateDivider": null,
+    "floatingButton": null,
+    "autoPlayVideos": null,
+    "hideOpenButton": null,
+    "darkMode": null,
+    "galleryShortcut": null,
+    "expandAllFolders": null,
+    "disableLogs": null,
+    "usePollingObserver": null,
+    "scanExtensions": null,
+    "imageThumbFit": null,
+    "videoThumbFit": null,
+    "deduplicateSymlinks": null
+}

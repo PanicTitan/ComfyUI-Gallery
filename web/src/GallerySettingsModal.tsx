@@ -150,6 +150,12 @@ const GallerySettingsModal = () => {
                     checked={staged.usePollingObserver}
                     onChange={checked => setStaged({ usePollingObserver: checked })}
                 />
+                <Switch
+                    checkedChildren={"Deduplicate Symlinks"}
+                    unCheckedChildren={"Show Symlinks Everywhere"}
+                    checked={staged.deduplicateSymlinks}
+                    onChange={checked => setStaged({ deduplicateSymlinks: checked })}
+                />
                 <div>
                     <Typography.Title level={5}>Image Thumb Fit:</Typography.Title>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>Constrain image thumbnails in the grid by width or height</Typography.Text>

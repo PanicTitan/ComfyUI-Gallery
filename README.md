@@ -114,6 +114,12 @@ The backend now supports **global log suppression** and **observer type switchin
 
 ## Changelog
 
+*   **v2.7.1:**
+    *   **Performance Improvement:** Changes in how the folders are parsed to improve gallery loading times for folders with many images.
+    *   **Symlink Deduplication Setting:** Added a new setting "Deduplicate Symlinks". When enabled (default), symlinked content is shown only once. When disabled, symlinks are shown everywhere they appear without causing infinite recursion.
+    *   **Fix:** Resolved a frontend tree parsing issue on Windows where subfolders wouldn't nest properly due to backslash paths.
+    *   **Fix:** Addressed an issue where portrait videos and images would open in a very large size, ignoring the "Fit Height" constraint.
+
 *   **v2.7.0:**
     *   3D model support: View `.obj`, `.glb`, `.gltf`, `.fbx`, `.stl`, `.usd`, `.usdz` files with auto-generated thumbnails and interactive 3D viewer.
     *   New thumb fit settings: Control whether image and video thumbnails are constrained by width or height (`imageThumbFit`, `videoThumbFit`).

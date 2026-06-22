@@ -15,7 +15,7 @@ from .gallery_config import gallery_log
 class GalleryEventHandler(PatternMatchingEventHandler):
     """Handles file system events, including symlinks, recursively."""
 
-    def __init__(self, base_path, patterns=None, ignore_patterns=None, ignore_directories=False, case_sensitive=True, debounce_interval=0.5, extensions=None):
+    def __init__(self, base_path, patterns=None, ignore_patterns=None, ignore_directories=False, case_sensitive=True, debounce_interval=0.5, extensions=None, deduplicate_symlinks=True):
         super().__init__(patterns=patterns, ignore_patterns=ignore_patterns, ignore_directories=ignore_directories, case_sensitive=case_sensitive)
         self.base_path = os.path.realpath(base_path)  # Use realpath for base_path
         self.debounce_timer = None
@@ -25,6 +25,7 @@ class GalleryEventHandler(PatternMatchingEventHandler):
         self.result_queue = queue.Queue()  # Queue for results.
         self.running_scan = False # Flag to avoid multiple scans at the same time
         self.extensions = extensions
+        self.deduplicate_symlinks = deduplicate_symlinks
         self.last_known_folders = {} # Ensure last_known_folders is initialized empty
 
     def on_any_event(self, event):
@@ -78,7 +79,7 @@ class GalleryEventHandler(PatternMatchingEventHandler):
             try:
                 folder_name = os.path.basename(self.base_path)
                 # Pass configured extensions to the scanner
-                new_folders_data, _ = _scan_for_images(self.base_path, folder_name, True, self.extensions)
+                new_folders_data, _ = _scan_for_images(self.base_path, folder_name, True, self.extensions, self.deduplicate_symlinks)
                 old_folders_data = self.last_known_folders
                 changes = detect_folder_changes(old_folders_data, new_folders_data)
 
@@ -132,11 +133,12 @@ class GalleryEventHandler(PatternMatchingEventHandler):
 class FileSystemMonitor:
     """Monitors the output directory, including symlinks, recursively."""
 
-    def __init__(self, base_path, interval=1.0, use_polling_observer=False, extensions=None):
+    def __init__(self, base_path, interval=1.0, use_polling_observer=False, extensions=None, deduplicate_symlinks=True):
         self.base_path = base_path
         self.interval = interval
         self.use_polling_observer = use_polling_observer
         self.extensions = extensions
+        self.deduplicate_symlinks = deduplicate_symlinks
         if use_polling_observer:
             self.observer = Observer()
         else:
@@ -148,7 +150,7 @@ class FileSystemMonitor:
         else:
             patterns = ["*"]
 
-        self.event_handler = GalleryEventHandler(base_path=base_path, patterns=patterns, debounce_interval=0.5, extensions=self.extensions)
+        self.event_handler = GalleryEventHandler(base_path=base_path, patterns=patterns, debounce_interval=0.5, extensions=self.extensions, deduplicate_symlinks=self.deduplicate_symlinks)
 
         # Do NOT perform a blocking scan in __init__ to avoid startup freeze.
         # Initial scan will be performed in the observer thread.
@@ -168,7 +170,7 @@ class FileSystemMonitor:
         try:
             folder_name = os.path.basename(self.base_path)
             gallery_log("FileSystemMonitor: Starting initial background scan...")
-            initial_data, _ = _scan_for_images(self.base_path, folder_name, True, self.extensions)
+            initial_data, _ = _scan_for_images(self.base_path, folder_name, True, self.extensions, self.deduplicate_symlinks)
             self.event_handler.last_known_folders = initial_data
             gallery_log("FileSystemMonitor: Initial background scan complete.")
         except Exception as e:
